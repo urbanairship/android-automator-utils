@@ -179,18 +179,18 @@ public class PreferencesHelper {
     }
 
     /**
-     * Set a tag
-     * @param tags The string to set to
+     * Add a tag
+     * @param tags The string to add
      * @throws UiObjectNotFoundException
      * @throws InterruptedException
      */
-    public void setTags(String tags) throws UiObjectNotFoundException, InterruptedException {
+    public void addTags(String tags) throws UiObjectNotFoundException, InterruptedException {
         // Scroll to the preference if its not visible in the list
-        scrollPreferenceIntoView("SET_TAGS");
+        scrollPreferenceIntoView("ADD_TAGS");
 
         UiObject okButton = new UiObject(new UiSelector().text("OK"));
-        UiObject setTags = new UiObject(new UiSelector().description("SET_TAGS"));
-        setTags.click();
+        UiObject addTags = new UiObject(new UiSelector().description("ADD_TAGS"));
+        addTags.click();
 
         // Check if a tag already exist
         UiObject tagsListView = new UiObject(new UiSelector().className("android.widget.ListView"));
@@ -202,19 +202,19 @@ public class PreferencesHelper {
             tagDeleteButton.click();
             okButton = new UiObject(new UiSelector().text("OK"));
             okButton.click();
-            setTags.click();
+            addTags.click();
         }
 
-        // Set tag
-        UiObject setTagsText = new UiObject(new UiSelector().className("android.widget.EditText"));
+        // Add tag
+        UiObject addTagsText = new UiObject(new UiSelector().className("android.widget.EditText"));
 
         // Add first tag
-        setTagsText.click();
+        addTagsText.click();
 
         // Wait for keyboard to pop up
         Thread.sleep(KEYBOARD_WAIT_TIME);
 
-        setTagsText.setText(tags);
+        addTagsText.setText(tags);
         UiObject addTagButton = new UiObject(new UiSelector().className("android.widget.ImageButton"));
         addTagButton.click();
 
