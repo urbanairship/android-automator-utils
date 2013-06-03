@@ -76,7 +76,7 @@ public class PushSender {
         builder.append(uniqueAlertId);
         builder.append("\",");
         builder.append(createExtrasString(extras));
-        builder.append("}");
+        builder.append("} }");
 
         return builder.toString();
     }
