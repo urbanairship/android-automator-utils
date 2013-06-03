@@ -2,6 +2,8 @@ package com.urbanairship.automatorutils;
 
 import android.util.Log;
 
+import java.util.Map;
+
 
 public class RichPushSender extends PushSender {
 
@@ -19,16 +21,22 @@ public class RichPushSender extends PushSender {
     }
 
     @Override
-    protected String createMessage(String pushString, String activity, String uniqueAlertId) {
+    protected String createMessage(String pushString, Map<String, String> extras, String uniqueAlertId) {
         StringBuilder builder = new StringBuilder();
         builder.append("{ ");
         if (pushString != null) {
             builder.append(pushString);
         }
 
-        builder.append("\"push\": {\"android\": { \"alert\": \"" + uniqueAlertId + "\", \"extra\": { \"activity\": \"" + activity + "\" } } },");
-        builder.append("\"title\": \"Rich Push " + uniqueAlertId +  "\",");
-        builder.append("\"message\": \"Rich Push Message " + uniqueAlertId + "\",");
+        builder.append("\"push\": {\"android\": { \"alert\": \"");
+        builder.append(uniqueAlertId);
+        builder.append("\",");
+        builder.append(createExtrasString(extras));
+        builder.append("} }, \"title\": \"Rich Push ");
+        builder.append(uniqueAlertId);
+        builder.append("\", \"message\": \"Rich Push Message ");
+        builder.append(uniqueAlertId);
+        builder.append("\",");
         builder.append("\"content-type\": \"text/html\"}");
 
         return builder.toString();
@@ -37,10 +45,11 @@ public class RichPushSender extends PushSender {
     /**
      * Sends a rich push message to a user
      * @param user The specified user id to send the rich push message to
+     * @return A unique alert Id
      * @throws Exception
      */
     public String sendRichPushToUser(String user) throws Exception {
         Log.i(TAG, "Send message to user: " + user);
-        return sendUnicastMessage("\"users\": [\"" + user + "\"],", "");
+        return sendUnicastMessage("\"users\": [\"" + user + "\"],", null);
     }
 }

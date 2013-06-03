@@ -13,6 +13,9 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Helper class to send push notifications
@@ -63,89 +66,142 @@ public class PushSender {
      * @param uniqueAlertId The string used to identify push messages
      * @return The message to be sent
      */
-    protected String createMessage(String pushString, String activity, String uniqueAlertId) {
+    protected String createMessage(String pushString, Map<String, String> extras, String uniqueAlertId) {
         StringBuilder builder = new StringBuilder();
         builder.append("{ ");
         if (pushString != null) {
             builder.append(pushString);
         }
-        builder.append("\"android\": { \"alert\": \"" + uniqueAlertId + "\", \"extra\": {\"a_key\":\"a_value\"} } }");
+        builder.append("\"android\": { \"alert\": \"");
+        builder.append(uniqueAlertId);
+        builder.append("\",");
+        builder.append(createExtrasString(extras));
+        builder.append("}");
+
         return builder.toString();
     }
 
 
     /**
      * Broadcast a push message
+     * @return A unique alert Id
      * @throws Exception
      */
     public String sendPushMessage() throws Exception {
-        Log.i(TAG, "Broadcast message: ");
-        return sendBroadcastMessage("");
+        Log.i(TAG, "Broadcast message");
+        return sendBroadcastMessage(null);
     }
 
     /**
      * Sends a push message to an activity
-     * @param activity The specified activity to send the push message to
+     * @param extras Any notification extras
+     * @return A unique alert Id
      * @throws Exception
      */
-    public String sendPushMessage(String activity) throws Exception {
-        Log.i(TAG, "Broadcast message to activity: " + activity);
-        return sendBroadcastMessage(activity);
+    public String sendPushMessage(Map<String, String> extras) throws Exception {
+        Log.i(TAG, "Broadcast message: to activity");
+        return sendBroadcastMessage(extras);
     }
 
     /**
      * Sends a push message to a tag
      * @param tag The specified tag to send the push message to
+     * @return A unique alert Id
      * @throws Exception
      */
     public String sendPushToTag(String tag) throws Exception {
         Log.i(TAG, "Send message to tag: " + tag);
-        return sendUnicastMessage("\"tags\": [\"" + tag + "\"],", "");
+        return sendUnicastMessage("\"tags\": [\"" + tag + "\"],", null);
     }
 
     /**
      * Sends a push message to an alias
      * @param alias The specified alias to send the push message to
-     * @param uniqueAlertId The string used to identify push messages
+     * @return A unique alert Id
      * @throws Exception
      */
     public String sendPushToAlias(String alias) throws Exception {
         Log.i(TAG, "Send message to tag: " + alias);
-        return sendUnicastMessage("\"aliases\": [\"" + alias + "\", \"anotherAlias\"],", "");
+        return sendUnicastMessage("\"aliases\": [\"" + alias + "\", \"anotherAlias\"],", null);
     }
 
     /**
      * Sends a push message to an APID
      * @param apid The specified apid to send the push message to
+     * @return A unique alert Id
      * @throws Exception
      */
     public String sendPushToApid(String apid) throws Exception {
         Log.i(TAG, "Send message to apid: " + apid);
-        return sendUnicastMessage("\"apids\": [\"" + apid + "\"],", "");
+        return sendUnicastMessage("\"apids\": [\"" + apid + "\"],", null);
     }
 
-    protected String sendUnicastMessage(String pushString, String activity) throws Exception {
-        return sendMessage(pushUrl, pushString, activity);
+    /**
+     * Sends a unicast message
+     * @param extras Any notification extras
+     * @return A unique alert Id
+     * @throws Exception
+     */
+    protected String sendUnicastMessage(String pushString, Map<String, String> extras) throws Exception {
+        return sendMessage(pushUrl, pushString, extras);
     }
 
-    protected String sendBroadcastMessage(String activity) throws Exception {
-        return sendMessage(broadcastUrl, null, activity);
+    /**
+     * Sends a broadcast message
+     * @param extras Any notification extras
+     * @return A unique alert Id
+     * @throws Exception
+     */
+    protected String sendBroadcastMessage(Map<String, String> extras) throws Exception {
+        return sendMessage(broadcastUrl, null, extras);
+    }
+
+    /**
+     * Creates the extras json string from a map
+     * @param extras Map of the extras
+     * @return The extras string
+     */
+    protected String createExtrasString(Map<String, String> extras) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\"extra\": {");
+
+        if (extras != null) {
+
+            Iterator<Entry<String, String>> entries = extras.entrySet().iterator();
+
+            while (entries.hasNext()) {
+                Entry<String, String> entry = entries.next();
+
+                builder.append("\"");
+                builder.append(entry.getKey());
+                builder.append("\": \"");
+                builder.append(entry.getValue());
+                builder.append("\"");
+
+                if (entries.hasNext()) {
+                    builder.append(",");
+                }
+            }
+        }
+
+        builder.append("}");
+        return builder.toString();
     }
 
     /**
      * Actually sends the push message
      * @param urlString The specified url the message is sent to
      * @param pushString The specified type of push
-     * @param activity The specified activity to send the push message to
-     * @return uniqueAlertId The string representing the uniqueAlertId
+     * @param extras Any notification extras
+     * @return A unique alert Id
      * @throws Exception
      */
-    private String sendMessage(String urlString, String pushString, String activity) throws Exception {
+    private String sendMessage(String urlString, String pushString, Map<String, String> extras) throws Exception {
         int sendMesgRetryCount = 0;
         String uniqueAlertId = "uniqueAlertId";
         while ( sendMesgRetryCount < MAX_SEND_MESG_RETRIES ) {
             uniqueAlertId = AutomatorUtils.generateUniqueAlertId();
-            String json = createMessage(pushString, activity, uniqueAlertId);
+            String json = createMessage(pushString, extras, uniqueAlertId);
             Log.i(TAG,  "Created message to send" + json);
 
             try {
