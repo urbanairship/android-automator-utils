@@ -7,6 +7,9 @@ package com.urbanairship.automatorutils;
 import android.util.Base64;
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -49,8 +52,21 @@ public class PushSender {
      * Constructor for PushSender
      * @param masterSecret The specified master secret for the app
      * @param appKey The specified app key for the app
-     * @param broadcastUrl The url for broadcasting push messages
-     * @param pushUrl The url for push messages
+     * @param pushUrl The URL for push messages (APIv3)
+     */
+    protected PushSender(String masterSecret, String appKey, String pushUrl) {
+        this.masterSecret = masterSecret;
+        this.appKey = appKey;
+        this.broadcastUrl = pushUrl;
+        this.pushUrl = pushUrl;
+    }
+
+    /**
+     * Constructor for PushSender
+     * @param masterSecret The specified master secret for the app
+     * @param appKey The specified app key for the app
+     * @param broadcastUrl The URL for broadcasting push messages
+     * @param pushUrl The URL for push messages
      */
     protected PushSender(String masterSecret, String appKey, String broadcastUrl, String pushUrl) {
         this.masterSecret = masterSecret;
@@ -62,23 +78,23 @@ public class PushSender {
     /**
      * Builds the message to be sent
      * @param pushString The string to append based on the type of push (user, alias, tag)
+     * @param pushValueString The value of the pushString based on the type
      * @param activity The specified activity to send the push message to
      * @param uniqueAlertId The string used to identify push messages
      * @return The message to be sent
+     * @throws JSONException
      */
-    protected String createMessage(String pushString, Map<String, String> extras, String uniqueAlertId) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{ ");
+    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
+        JSONObject jsonPayload = new JSONObject();
         if (pushString != null) {
-            builder.append(pushString);
+            jsonPayload.put(pushString, pushValueString);
         }
-        builder.append("\"android\": { \"alert\": \"");
-        builder.append(uniqueAlertId);
-        builder.append("\",");
-        builder.append(createExtrasString(extras));
-        builder.append("} }");
+        JSONObject jsonAlert = new JSONObject();
+        jsonAlert.put("alert", uniqueAlertId);
+        jsonPayload.put("android", jsonAlert);
+        jsonPayload.put("extra", createExtrasJsonObject(extras));
 
-        return builder.toString();
+        return jsonPayload.toString();
     }
 
 
@@ -89,7 +105,7 @@ public class PushSender {
      */
     public String sendPushMessage() throws Exception {
         Log.i(TAG, "Broadcast message");
-        return sendBroadcastMessage(null);
+        return sendMessage(broadcastUrl, null, null, null);
     }
 
     /**
@@ -100,7 +116,7 @@ public class PushSender {
      */
     public String sendPushMessage(Map<String, String> extras) throws Exception {
         Log.i(TAG, "Broadcast message: to activity");
-        return sendBroadcastMessage(extras);
+        return sendMessage(broadcastUrl, null, null, extras);
     }
 
     /**
@@ -111,7 +127,7 @@ public class PushSender {
      */
     public String sendPushToTag(String tag) throws Exception {
         Log.i(TAG, "Send message to tag: " + tag);
-        return sendUnicastMessage("\"tags\": [\"" + tag + "\"],", null);
+        return sendMessage(pushUrl, "tags", tag, null);
     }
 
     /**
@@ -122,7 +138,7 @@ public class PushSender {
      */
     public String sendPushToAlias(String alias) throws Exception {
         Log.i(TAG, "Send message to tag: " + alias);
-        return sendUnicastMessage("\"aliases\": [\"" + alias + "\", \"anotherAlias\"],", null);
+        return sendMessage(pushUrl, "aliases", alias, null);
     }
 
     /**
@@ -133,79 +149,61 @@ public class PushSender {
      */
     public String sendPushToApid(String apid) throws Exception {
         Log.i(TAG, "Send message to apid: " + apid);
-        return sendUnicastMessage("\"apids\": [\"" + apid + "\"],", null);
-    }
-
-    /**
-     * Sends a unicast message
-     * @param extras Any notification extras
-     * @return A unique alert Id
-     * @throws Exception
-     */
-    protected String sendUnicastMessage(String pushString, Map<String, String> extras) throws Exception {
-        return sendMessage(pushUrl, pushString, extras);
-    }
-
-    /**
-     * Sends a broadcast message
-     * @param extras Any notification extras
-     * @return A unique alert Id
-     * @throws Exception
-     */
-    protected String sendBroadcastMessage(Map<String, String> extras) throws Exception {
-        return sendMessage(broadcastUrl, null, extras);
+        return sendMessage(pushUrl, "apids", apid, null);
     }
 
     /**
      * Creates the extras json string from a map
      * @param extras Map of the extras
      * @return The extras string
+     * @throws JSONException
      */
-    protected String createExtrasString(Map<String, String> extras) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("\"extra\": {");
-
+    protected JSONObject createExtrasJsonObject(Map<String, String> extras) throws JSONException {
+        JSONObject jsonExtras = new JSONObject();
         if (extras != null) {
 
             Iterator<Entry<String, String>> entries = extras.entrySet().iterator();
 
             while (entries.hasNext()) {
                 Entry<String, String> entry = entries.next();
-
-                builder.append("\"");
-                builder.append(entry.getKey());
-                builder.append("\": \"");
-                builder.append(entry.getValue());
-                builder.append("\"");
-
-                if (entries.hasNext()) {
-                    builder.append(",");
-                }
+                jsonExtras.put(entry.getKey(), entry.getValue());
             }
         }
-
-        builder.append("}");
-        return builder.toString();
+        return jsonExtras;
     }
 
     /**
      * Actually sends the push message
      * @param urlString The specified url the message is sent to
      * @param pushString The specified type of push
+     * @param pushValueString The value of the pushString based on the type
      * @param extras Any notification extras
+     * @throws Exception
+     */
+    protected String sendMessage(String urlString, String pushString, String pushValueString, Map<String, String> extras) throws Exception {
+        return sendMessage(urlString, pushString, pushValueString, extras, null);
+    }
+
+    /**
+     * Actually sends the push message
+     * @param urlString The specified url the message is sent to
+     * @param pushString The specified type of push
+     * @param pushValueString The value of the pushString based on the type
+     * @param extras Any notification extras
+     * @param requestProperties The specified connection request property
      * @return A unique alert Id
      * @throws Exception
      */
-    private String sendMessage(String urlString, String pushString, Map<String, String> extras) throws Exception {
+    protected String sendMessage(String urlString, String pushString, String pushValueString, Map<String, String> extras, Map<String, String> requestProperties) throws Exception {
         int sendMesgRetryCount = 0;
         String uniqueAlertId = "uniqueAlertId";
         while ( sendMesgRetryCount < MAX_SEND_MESG_RETRIES ) {
             uniqueAlertId = AutomatorUtils.generateUniqueAlertId();
-            String json = createMessage(pushString, extras, uniqueAlertId);
+            String json = createMessage(pushString, pushValueString, extras, uniqueAlertId);
             Log.i(TAG,  "Created message to send" + json);
 
             try {
-                sendMessageHelper(urlString, json);
+                sendMessageHelper(urlString, json, requestProperties);
                 return uniqueAlertId;
             } catch (Exception ex) {
                 Log.e(TAG, "Failed to send message: " + json, ex);
@@ -222,7 +220,7 @@ public class PushSender {
      * @param message The json formatted message to be sent
      * @throws IOException
      */
-    private void sendMessageHelper(String urlString, String message) throws IOException  {
+    protected void sendMessageHelper(String urlString, String message, Map<String, String> requestProperties) throws IOException  {
         URL url = new URL(urlString);
         HttpURLConnection conn = null;
 
@@ -235,10 +233,14 @@ public class PushSender {
             conn.setDoInput(true);
             conn.setUseCaches(false);
             conn.setAllowUserInteraction(false);
-            conn.setRequestProperty("Content-Type",
-                    "application/json");
-
+            conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Authorization", basicAuthString);
+
+            if (requestProperties != null) {
+                for (String key: requestProperties.keySet()) {
+                    conn.setRequestProperty(key, requestProperties.get(key));
+                }
+            }
 
             // Create the form content
             OutputStream out = conn.getOutputStream();
@@ -247,11 +249,11 @@ public class PushSender {
             writer.close();
             out.close();
 
-            if (conn.getResponseCode() != 200) {
+            if (conn.getResponseCode() == 200 || conn.getResponseCode() == 202) {
+                Log.i(TAG, "Push sent: " + message);
+            } else {
                 Log.e(TAG, "Sending push failed with: " + conn.getResponseCode() + " " + conn.getResponseMessage() + " Message: " + message);
                 throw new IOException(conn.getResponseMessage());
-            } else {
-                Log.i(TAG, "Push sent: " + message);
             }
         } finally {
             if (conn != null) {

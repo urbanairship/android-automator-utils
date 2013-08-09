@@ -2,6 +2,10 @@ package com.urbanairship.automatorutils;
 
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Map;
 
 
@@ -21,25 +25,24 @@ public class RichPushSender extends PushSender {
     }
 
     @Override
-    protected String createMessage(String pushString, Map<String, String> extras, String uniqueAlertId) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{ ");
+    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
+        JSONObject jsonPayload = new JSONObject();
+        JSONObject jsonPush = new JSONObject();
         if (pushString != null) {
-            builder.append(pushString);
+            JSONArray jsonPushArray = new JSONArray();
+            jsonPushArray.put(pushValueString);
+            jsonPayload.put(pushString, jsonPushArray);
         }
+        JSONObject jsonAlert = new JSONObject();
+        jsonAlert.put("alert", uniqueAlertId);
+        jsonAlert.put("extra", createExtrasJsonObject(extras));
+        jsonPush.put("android", jsonAlert);
+        jsonPayload.put("push", jsonPush);
+        jsonPayload.put("title", "Rich Push " + uniqueAlertId);
+        jsonPayload.put("message", "Rich Push Message " + uniqueAlertId);
+        jsonPayload.put("content-type", "text/html");
 
-        builder.append("\"push\": {\"android\": { \"alert\": \"");
-        builder.append(uniqueAlertId);
-        builder.append("\",");
-        builder.append(createExtrasString(extras));
-        builder.append("} }, \"title\": \"Rich Push ");
-        builder.append(uniqueAlertId);
-        builder.append("\", \"message\": \"Rich Push Message ");
-        builder.append(uniqueAlertId);
-        builder.append("\",");
-        builder.append("\"content-type\": \"text/html\"}");
-
-        return builder.toString();
+        return jsonPayload.toString();
     }
 
     /**
@@ -50,6 +53,20 @@ public class RichPushSender extends PushSender {
      */
     public String sendRichPushToUser(String user) throws Exception {
         Log.i(TAG, "Send message to user: " + user);
-        return sendUnicastMessage("\"users\": [\"" + user + "\"],", null);
+        return sendMessage(RICH_PUSH_URL, "users", user, null);
+    }
+
+    /**
+     * Sends a push message to an APID
+     * @param apid The specified apid to send the push message to
+     * @return A unique alert Id
+     * @throws Exception
+     */
+    @Override
+    public String sendPushToApid(String apid) throws Exception {
+        Log.i(TAG, "Send message to apid: " + apid);
+        JSONObject jsonAudience = new JSONObject();
+        jsonAudience.put("apid", apid);
+        return sendMessage(RICH_PUSH_URL, "audience", jsonAudience.toString(), null);
     }
 }

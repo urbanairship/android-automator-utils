@@ -1,6 +1,8 @@
 package com.urbanairship.automatorutils;
 
-import android.util.Log;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.Map;
 
@@ -18,28 +20,33 @@ public class RichPushSenderApiV3 extends PushSenderApiV3 {
     }
 
     @Override
-    protected String createMessage(String pushString, Map<String, String> extras, String uniqueAlertId) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("{ ");
-        if (pushString != null) {
-            builder.append(pushString);
+    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
+        JSONObject jsonPayload = new JSONObject();
+        if (pushValueString.equalsIgnoreCase("all")) {
+            jsonPayload.put(pushString, pushValueString);
+        } else {
+            JSONObject jsonAudience = new JSONObject();
+            JSONObject jsonAudienceType = new JSONObject(pushValueString);
+            JSONArray namesArray = jsonAudienceType.names();
+            String name = namesArray.getString(0);
+            jsonAudience.put(name, jsonAudienceType.get(name));
+            jsonPayload.put("audience", jsonAudience);
         }
 
-        builder.append("\"device_types\": [ \"android\" ],");
-        builder.append("\"notification\": { \"alert\": \"");
-        builder.append(uniqueAlertId);
-        builder.append("\"},");
-        builder.append("\"message\": { ");
-        builder.append("\"title\": \"Rich Push ");
-        builder.append(uniqueAlertId);
-        builder.append("\", \"body\": \"Rich Push Message ");
-        builder.append(uniqueAlertId);
-        builder.append("\",");
-        builder.append(createExtrasString(extras));
-        builder.append(",");
-        builder.append("\"content_type\": \"text/html\"}}");
+        JSONArray jsonDeviceType = new JSONArray();
+        jsonDeviceType.put("android");
+        jsonPayload.put("device_types", jsonDeviceType);
 
-        Log.i(TAG, "RichPushSender API v3 string is: " + builder.toString());
-        return builder.toString();
+        JSONObject jsonNotification = new JSONObject();
+        jsonNotification.put("alert", uniqueAlertId);
+        jsonPayload.put("notification", jsonNotification);
+
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("title", "Rich Push " + uniqueAlertId);
+        jsonMessage.put("body", "Rich Push Message " + uniqueAlertId);
+        jsonMessage.put("content_type", "text/html");
+        jsonPayload.put("message", jsonMessage);
+
+        return jsonPayload.toString();
     }
 }
