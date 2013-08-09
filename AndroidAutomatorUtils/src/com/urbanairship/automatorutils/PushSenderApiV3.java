@@ -32,19 +32,18 @@ public class PushSenderApiV3 extends PushSender {
     }
 
     @Override
-    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
-        Log.i(TAG, "PushSenderApiV3 createMessage() pushString: " + pushString + " pushValueString: " + pushValueString);
+    protected String createMessage(String recipientString, String recipientValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
         JSONObject jsonPayload = new JSONObject();
-        if (pushValueString.equalsIgnoreCase("all")) {
-            jsonPayload.put(pushString, pushValueString);
+        if (recipientValueString.equalsIgnoreCase("all")) {
+            jsonPayload.put(recipientString, recipientValueString);
         } else {
             JSONObject jsonAudience = new JSONObject();
-            JSONObject jsonAudienceType = new JSONObject(pushValueString);
+
+            JSONObject jsonAudienceType = new JSONObject(recipientValueString);
             JSONArray namesArray = jsonAudienceType.names();
             String name = namesArray.getString(0);
-            Log.i(TAG, "PushSenderAPiV3 name: " + name);
             jsonAudience.put(name, jsonAudienceType.get(name));
-            Log.i(TAG, "PushSenderApiV3 jsonAudience: " + jsonAudience.toString());
+
             jsonPayload.put("audience", jsonAudience);
         }
 

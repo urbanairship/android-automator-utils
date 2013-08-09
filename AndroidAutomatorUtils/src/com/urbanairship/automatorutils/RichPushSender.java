@@ -25,17 +25,20 @@ public class RichPushSender extends PushSender {
     }
 
     @Override
-    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
+    protected String createMessage(String recipientString, String recipientValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
         JSONObject jsonPayload = new JSONObject();
         JSONObject jsonPush = new JSONObject();
-        if (pushString != null) {
+        if (recipientString != null) {
             JSONArray jsonPushArray = new JSONArray();
-            jsonPushArray.put(pushValueString);
-            jsonPayload.put(pushString, jsonPushArray);
+            jsonPushArray.put(recipientValueString);
+            jsonPayload.put(recipientString, jsonPushArray);
         }
         JSONObject jsonAlert = new JSONObject();
         jsonAlert.put("alert", uniqueAlertId);
-        jsonAlert.put("extra", createExtrasJsonObject(extras));
+        if (extras != null) {
+            JSONObject jsonExtras = new JSONObject(extras);
+            jsonAlert.put("extra", jsonExtras);
+        }
         jsonPush.put("android", jsonAlert);
         jsonPayload.put("push", jsonPush);
         jsonPayload.put("title", "Rich Push " + uniqueAlertId);

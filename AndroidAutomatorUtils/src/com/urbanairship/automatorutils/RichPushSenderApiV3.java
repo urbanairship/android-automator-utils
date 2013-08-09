@@ -1,6 +1,5 @@
 package com.urbanairship.automatorutils;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -20,26 +19,9 @@ public class RichPushSenderApiV3 extends PushSenderApiV3 {
     }
 
     @Override
-    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
-        JSONObject jsonPayload = new JSONObject();
-        if (pushValueString.equalsIgnoreCase("all")) {
-            jsonPayload.put(pushString, pushValueString);
-        } else {
-            JSONObject jsonAudience = new JSONObject();
-            JSONObject jsonAudienceType = new JSONObject(pushValueString);
-            JSONArray namesArray = jsonAudienceType.names();
-            String name = namesArray.getString(0);
-            jsonAudience.put(name, jsonAudienceType.get(name));
-            jsonPayload.put("audience", jsonAudience);
-        }
-
-        JSONArray jsonDeviceType = new JSONArray();
-        jsonDeviceType.put("android");
-        jsonPayload.put("device_types", jsonDeviceType);
-
-        JSONObject jsonNotification = new JSONObject();
-        jsonNotification.put("alert", uniqueAlertId);
-        jsonPayload.put("notification", jsonNotification);
+    protected String createMessage(String recipientString, String recipientValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
+        String message = super.createMessage(recipientString, recipientValueString, extras, uniqueAlertId);
+        JSONObject jsonPayload = new JSONObject(message);
 
         JSONObject jsonMessage = new JSONObject();
         jsonMessage.put("title", "Rich Push " + uniqueAlertId);

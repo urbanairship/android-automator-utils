@@ -16,9 +16,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * Helper class to send push notifications
@@ -77,23 +75,26 @@ public class PushSender {
 
     /**
      * Builds the message to be sent
-     * @param pushString The string to append based on the type of push (user, alias, tag)
-     * @param pushValueString The value of the pushString based on the type
+     * @param recipientString The string to append based on the type of push (user, alias, tag)
+     * @param recipientValueString The value of the recipientString based on the type
      * @param activity The specified activity to send the push message to
      * @param uniqueAlertId The string used to identify push messages
      * @return The message to be sent
      * @throws JSONException
      */
-    protected String createMessage(String pushString, String pushValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
+    protected String createMessage(String recipientString, String recipientValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
         JSONObject jsonPayload = new JSONObject();
-        if (pushString != null) {
-            jsonPayload.put(pushString, pushValueString);
+        if (recipientString != null) {
+            jsonPayload.put(recipientString, recipientValueString);
         }
         JSONObject jsonAlert = new JSONObject();
         jsonAlert.put("alert", uniqueAlertId);
         jsonPayload.put("android", jsonAlert);
-        jsonPayload.put("extra", createExtrasJsonObject(extras));
-
+        if (extras != null) {
+            JSONObject jsonExtras = new JSONObject(extras);
+            jsonPayload.put("extra", jsonExtras);
+        }
+        Log.w(TAG, jsonPayload.toString());
         return jsonPayload.toString();
     }
 
@@ -153,53 +154,33 @@ public class PushSender {
     }
 
     /**
-     * Creates the extras json string from a map
-     * @param extras Map of the extras
-     * @return The extras string
-     * @throws JSONException
-     */
-    protected JSONObject createExtrasJsonObject(Map<String, String> extras) throws JSONException {
-        JSONObject jsonExtras = new JSONObject();
-        if (extras != null) {
-
-            Iterator<Entry<String, String>> entries = extras.entrySet().iterator();
-
-            while (entries.hasNext()) {
-                Entry<String, String> entry = entries.next();
-                jsonExtras.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return jsonExtras;
-    }
-
-    /**
      * Actually sends the push message
      * @param urlString The specified url the message is sent to
-     * @param pushString The specified type of push
-     * @param pushValueString The value of the pushString based on the type
+     * @param recipientString The specified type of push
+     * @param recipientValueString The value of the recipientString based on the type
      * @param extras Any notification extras
      * @throws Exception
      */
-    protected String sendMessage(String urlString, String pushString, String pushValueString, Map<String, String> extras) throws Exception {
-        return sendMessage(urlString, pushString, pushValueString, extras, null);
+    protected String sendMessage(String urlString, String recipientString, String recipientValueString, Map<String, String> extras) throws Exception {
+        return sendMessage(urlString, recipientString, recipientValueString, extras, null);
     }
 
     /**
      * Actually sends the push message
      * @param urlString The specified url the message is sent to
-     * @param pushString The specified type of push
-     * @param pushValueString The value of the pushString based on the type
+     * @param recipientString The specified type of push
+     * @param recipientValueString The value of the recipientString based on the type
      * @param extras Any notification extras
      * @param requestProperties The specified connection request property
      * @return A unique alert Id
      * @throws Exception
      */
-    protected String sendMessage(String urlString, String pushString, String pushValueString, Map<String, String> extras, Map<String, String> requestProperties) throws Exception {
+    protected String sendMessage(String urlString, String recipientString, String recipientValueString, Map<String, String> extras, Map<String, String> requestProperties) throws Exception {
         int sendMesgRetryCount = 0;
         String uniqueAlertId = "uniqueAlertId";
         while ( sendMesgRetryCount < MAX_SEND_MESG_RETRIES ) {
             uniqueAlertId = AutomatorUtils.generateUniqueAlertId();
-            String json = createMessage(pushString, pushValueString, extras, uniqueAlertId);
+            String json = createMessage(recipientString, recipientValueString, extras, uniqueAlertId);
             Log.i(TAG,  "Created message to send" + json);
 
             try {
