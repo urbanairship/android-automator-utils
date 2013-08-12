@@ -7,6 +7,7 @@ package com.urbanairship.automatorutils;
 import android.util.Base64;
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -85,7 +86,9 @@ public class PushSender {
     protected String createMessage(String recipientString, String recipientValueString, Map<String, String> extras, String uniqueAlertId) throws JSONException {
         JSONObject jsonPayload = new JSONObject();
         if (recipientString != null) {
-            jsonPayload.put(recipientString, recipientValueString);
+            JSONArray jsonPushArray = new JSONArray();
+            jsonPushArray.put(recipientValueString);
+            jsonPayload.put(recipientString, jsonPushArray);
         }
         JSONObject jsonAlert = new JSONObject();
         jsonAlert.put("alert", uniqueAlertId);
