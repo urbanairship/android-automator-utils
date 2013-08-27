@@ -141,7 +141,7 @@ public class PushSender {
      * @throws Exception
      */
     public String sendPushToAlias(String alias) throws Exception {
-        Log.i(TAG, "Send message to tag: " + alias);
+        Log.i(TAG, "Send message to alias: " + alias);
         return sendMessage(pushUrl, "aliases", alias, null);
     }
 

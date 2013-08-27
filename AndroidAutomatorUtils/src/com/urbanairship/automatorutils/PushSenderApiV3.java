@@ -102,7 +102,7 @@ public class PushSenderApiV3 extends PushSender {
      */
     @Override
     public String sendPushToAlias(String alias) throws Exception {
-        Log.i(TAG, "Send message to tag: " + alias);
+        Log.i(TAG, "Send message to alias: " + alias);
         JSONObject jsonAudience = new JSONObject();
         jsonAudience.put("alias", alias);
         return sendMessage(PUSH_URL, "audience", jsonAudience.toString(), null, requestProperties);
