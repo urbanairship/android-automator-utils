@@ -23,13 +23,7 @@ public class AutomatorUtils {
     private static int WAIT_FOR_UI_OBJECTS_DELAY = 1000;  // 1 second
     private static int ALL_APPS_BUTTON_WAIT_TIME = 5000;   // 5 seconds
 
-    /**
-     * Open the notification area
-     */
-    public static void openNotificationArea() {
-        UiDevice device = UiDevice.getInstance();
-        device.swipe(50, 2, 50, device.getDisplayHeight(), 5);
-    }
+
 
     /**
      * Waits for UiObjects to exist
@@ -71,6 +65,7 @@ public class AutomatorUtils {
      * @throws InterruptedException
      */
     public static boolean openApp(String appName, String packageName) throws UiObjectNotFoundException, InterruptedException {
+
         UiDevice device = UiDevice.getInstance();
 
         try {
@@ -144,19 +139,20 @@ public class AutomatorUtils {
      * @throws UiObjectNotFoundException
      */
     public static void clearNotifications() throws UiObjectNotFoundException {
-        UiDevice device = UiDevice.getInstance();
-
-        // Open notification area
-        device.swipe(50, 2, 50, device.getDisplayHeight(), 5);
-
         // Click the clear all notifications button
         UiObject clearButton = new UiObject(new UiSelector().description("Clear all notifications."));
 
         if (clearButton.exists()) {
             clearButton.click();
-        } else {
-            device.pressBack();
         }
+    }
+
+    /**
+     * Open the notification area
+     */
+    public static void openNotificationArea() {
+        UiDevice device = UiDevice.getInstance();
+        device.swipe(50, 2, 50, device.getDisplayHeight(), 5);
     }
 
     /**
