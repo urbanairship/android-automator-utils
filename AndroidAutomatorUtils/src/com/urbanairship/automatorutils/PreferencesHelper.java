@@ -15,9 +15,8 @@ import com.android.uiautomator.core.UiSelector;
  */
 public class PreferencesHelper {
 
-    private static int UI_OBJECTS_WAIT_TIME = 1000;  // 1 second
-    private static int MAX_REGISTRATION_WAIT_TIME = 180000;  // 3 minutes in case of long registration
     private static int KEYBOARD_WAIT_TIME = 3000;  // 3 seconds
+    private static int UI_OBJECTS_WAIT_TIME = 1000;  // 1 second
     private static int SET_ALIAS_TEXT_WAIT_TIME = 3000;  // 3 seconds
 
     private UiSelector getPreferenceSummarySelector(String description) {
@@ -120,7 +119,7 @@ public class PreferencesHelper {
         UiSelector summary = this.getPreferenceSummarySelector(setting);
         listView.scrollIntoView(summary);
         UiObject summaryText = new UiObject(summary);
-        AutomatorUtils.waitForUiObjectsToExist(MAX_REGISTRATION_WAIT_TIME, summaryText);
+        AutomatorUtils.waitForUiObjectsToExist(UI_OBJECTS_WAIT_TIME, summaryText);
         if (summaryText.exists()) {
             summaryString = summaryText.getText();
         }
